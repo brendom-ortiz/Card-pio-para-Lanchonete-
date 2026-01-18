@@ -1,0 +1,7 @@
+{
+  "name": "Guilherme Burgers",
+  "description": "Sistema de gestão e cardápio premium em Vermelho, Roxo e Dourado com integração de pedidos via WhatsApp.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
