@@ -4,7 +4,7 @@ export interface Snack {
   name: string;
   description: string;
   price: number;
-  category: 'Burgers' | 'Hot Dogs' | 'Acompanhamentos' | 'Bebidas';
+  category: 'Burgers' | 'Hot Dogs' | 'Acompanhamentos' | 'Bebidas' | 'Combos';
   image: string;
 }
 

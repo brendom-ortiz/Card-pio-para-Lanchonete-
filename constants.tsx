@@ -2,6 +2,7 @@
 import { Snack, MenuCategory } from './types';
 
 export const CATEGORIES: MenuCategory[] = [
+  { id: 'Combos', label: 'Combos', icon: '🎁' },
   { id: 'Burgers', label: 'Burgers', icon: '🍔' },
   { id: 'Hot Dogs', label: 'Hot Dogs', icon: '🌭' },
   { id: 'Acompanhamentos', label: 'Porções', icon: '🍟' },
@@ -9,6 +10,22 @@ export const CATEGORIES: MenuCategory[] = [
 ];
 
 export const SNACKS: Snack[] = [
+  {
+    id: 'c1',
+    name: 'Combo Império',
+    description: '1 X-Guilherme Royal + Batata M + Coca-Cola Original 350ml. O favorito da casa.',
+    price: 54.90,
+    category: 'Combos',
+    image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?auto=format&fit=crop&q=80&w=400&h=300'
+  },
+  {
+    id: 'c2',
+    name: 'Dupla Real',
+    description: '2 Burgers Classic Guilherme + Porção de Batatas G. Perfeito para compartilhar.',
+    price: 79.90,
+    category: 'Combos',
+    image: 'https://images.unsplash.com/photo-1521305916504-4a1121188589?auto=format&fit=crop&q=80&w=400&h=300'
+  },
   {
     id: 'b1',
     name: 'X-Guilherme Royal',
@@ -24,13 +41,5 @@ export const SNACKS: Snack[] = [
     price: 41.50,
     category: 'Burgers',
     image: 'https://images.unsplash.com/photo-1550317143-b3024d869248?auto=format&fit=crop&q=80&w=400&h=300'
-  },
-  {
-    id: 'b3',
-    name: 'Classic Guilherme',
-    description: 'O clássico com alface premium, tomate, cebola branca, picles crocante e maionese real.',
-    price: 32.90,
-    category: 'Burgers',
-    image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&q=80&w=400&h=300'
   }
 ];

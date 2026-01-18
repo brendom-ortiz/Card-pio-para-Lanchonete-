@@ -25,7 +25,7 @@ const App: React.FC = () => {
     return localStorage.getItem('guilherme_burgers_phone') || '5511999999999';
   });
 
-  const [activeCategory, setActiveCategory] = useState('Burgers');
+  const [activeCategory, setActiveCategory] = useState('Combos');
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
