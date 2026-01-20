@@ -1,6 +1,6 @@
 {
-  "name": "Guilherme Burgers",
-  "description": "Sistema de gestão e cardápio premium em Vermelho, Roxo e Dourado com integração de pedidos via WhatsApp.",
+  "name": "Delícia Burger",
+  "description": "Sistema de cardápio alegre e divertido para lanchonetes com pedidos integrados.",
   "requestFramePermissions": [
     "microphone"
   ]

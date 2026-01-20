@@ -9,37 +9,34 @@ interface SnackCardProps {
 
 const SnackCard: React.FC<SnackCardProps> = ({ snack, onAddToCart }) => {
   return (
-    <div className="group relative flex flex-col md:flex-row gap-4 p-4 rounded-xl hover:bg-white/5 transition-all duration-300 items-center md:items-start">
-      {/* Miniatura da Foto estilo Selo com borda Gold */}
-      <div className="relative w-24 h-24 flex-shrink-0">
+    <div className="brutal-border brutal-border-gold flex flex-col h-full bg-white overflow-hidden group">
+      <div className="relative h-64 overflow-hidden border-b-2 border-gray-100">
         <img 
           src={snack.image} 
           alt={snack.name} 
-          className="w-full h-full object-cover rounded-full border-2 border-amber-500/50 shadow-lg group-hover:scale-110 transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
-        <div className="absolute inset-0 rounded-full bg-gradient-to-t from-slate-900/40 to-transparent"></div>
-      </div>
-
-      <div className="flex-1 flex flex-col w-full">
-        <div className="flex items-end justify-between w-full mb-1">
-          <h3 className="text-xl font-brand tracking-wider text-white uppercase group-hover:text-amber-500 transition-colors">
-            {snack.name}
-          </h3>
-          <div className="dotted-line hidden md:block"></div>
-          <span className="price-tag text-2xl">
+        <div className="absolute top-4 right-4">
+          <span className="bg-white border-2 border-[#111827] text-[#D32F2F] px-4 py-1 rounded-xl font-normal text-xl shadow-[3px_3px_0px_#111827]">
             R$ {snack.price.toFixed(2)}
           </span>
         </div>
+      </div>
+
+      <div className="p-8 flex flex-col flex-1 bg-white">
+        <h3 className="text-3xl font-impact text-[#D32F2F] mb-2 uppercase tracking-tight leading-none">
+          {snack.name}
+        </h3>
         
-        <p className="text-slate-300 text-sm italic font-light leading-relaxed mb-3">
+        <p className="text-gray-500 text-xs font-normal leading-relaxed mb-8 flex-1">
           {snack.description}
         </p>
 
         <button 
           onClick={() => onAddToCart(snack)}
-          className="self-start text-xs font-bold uppercase tracking-widest text-red-600 hover:text-white border border-red-600/30 hover:bg-red-600 px-4 py-1.5 rounded-full transition-all active:scale-95 shadow-md shadow-red-900/20"
+          className="w-full bg-[#D32F2F] hover:bg-[#111827] text-white font-normal py-5 rounded-xl border-2 border-[#111827] shadow-[4px_4px_0px_#111827] active:shadow-none active:translate-x-0.5 active:translate-y-0.5 transition-all uppercase text-[10px] tracking-widest"
         >
-          + Solicitar
+          ADICIONAR AO PEDIDO 🔥
         </button>
       </div>
     </div>

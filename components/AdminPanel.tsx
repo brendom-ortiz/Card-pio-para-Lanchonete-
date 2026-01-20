@@ -10,6 +10,8 @@ interface AdminPanelProps {
   onUpdateSnack: (updatedSnack: Snack) => void;
   onAddSnack: (newSnack: Snack) => void;
   onDeleteSnack: (id: string) => void;
+  onLogout: () => void;
+  onImportAll: (newSnacks: Snack[]) => void;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ 
@@ -18,200 +20,206 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
   onUpdatePhone, 
   onUpdateSnack, 
   onAddSnack, 
-  onDeleteSnack 
+  onDeleteSnack,
+  onLogout,
+  onImportAll
 }) => {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<Snack | null>(null);
+  const [editingSnackId, setEditingSnackId] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Snack | null>(null);
+  const [showPublishCode, setShowPublishCode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleEditClick = (snack: Snack) => {
-    setEditingId(snack.id);
-    setEditForm({ ...snack });
-  };
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = () => {
-    if (editForm) {
-      onUpdateSnack(editForm);
-      setEditingId(null);
-      setEditForm(null);
-    }
-  };
-
-  const handleDelete = (id: string, name: string) => {
-    if (window.confirm(`Tem certeza que deseja remover "${name}" do cardápio real?`)) {
-      onDeleteSnack(id);
-      if (editingId === id) {
-        setEditingId(null);
-        setEditForm(null);
-      }
-    }
-  };
-
-  const handleAddNew = (category: Snack['category']) => {
-    const newSnack: Snack = {
-      id: `snack-${Date.now()}`,
-      name: 'Novo Item Real',
-      description: 'Uma nova joia do Guilherme...',
-      price: 0,
-      category: category,
-      image: 'https://picsum.photos/seed/guilherme/400/300'
-    };
-    onAddSnack(newSnack);
-    handleEditClick(newSnack);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    if (editForm) {
-      setEditForm({
-        ...editForm,
-        [name]: name === 'price' ? parseFloat(value) || 0 : value
-      });
+    if (formData) {
+      onUpdateSnack(formData);
+      setEditingSnackId(null);
+      setFormData(null);
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && editForm) {
+    if (file && formData) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditForm({
-          ...editForm,
-          image: reader.result as string
-        });
+        setFormData({ ...formData, image: reader.result as string });
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+  const generateShareLink = () => {
+    const data = { snacks, phoneNumber };
+    const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+    const url = `${window.location.origin}${window.location.pathname}?d=${encoded}`;
+    
+    navigator.clipboard.writeText(url).then(() => {
+      alert("Link do cardápio copiado! Quem abrir este link verá exatamente o que você configurou agora.");
+    });
+  };
+
+  const handleExport = () => {
+    const dataStr = JSON.stringify({ snacks, phoneNumber }, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', 'cardapio_backup.json');
+    linkElement.click();
+  };
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = JSON.parse(event.target?.result as string);
+        if (json.snacks) onImportAll(json.snacks);
+        if (json.phoneNumber) onUpdatePhone(json.phoneNumber);
+        alert('Dados importados com sucesso!');
+      } catch (err) { alert('Erro no arquivo.'); }
+    };
+    reader.readAsText(file);
   };
 
   return (
-    <div className="flex flex-col gap-8 animate-slide-up">
-      {/* Seção de Configuração do Número */}
-      <div className="bg-slate-900/40 rounded-3xl p-6 border border-purple-500/30 backdrop-blur-sm shadow-2xl">
-        <h2 className="text-2xl font-brand text-purple-500 tracking-widest uppercase mb-4">Configurações de Contato</h2>
-        <div className="flex flex-col gap-2">
-          <label className="text-[10px] text-amber-500 uppercase font-bold tracking-widest ml-1">WhatsApp para Recebimento (com DDD)</label>
-          <div className="flex gap-2">
-            <input 
-              type="text"
-              value={phoneNumber}
-              onChange={(e) => onUpdatePhone(e.target.value)}
-              placeholder="Ex: 5511999999999"
-              className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-white focus:ring-2 ring-purple-500 outline-none"
-            />
-            <div className="bg-purple-900/20 border border-purple-500/30 px-4 py-3 rounded-xl flex items-center justify-center">
-              <span className="text-sm">💾 Auto-salvo</span>
-            </div>
-          </div>
-          <p className="text-[9px] text-slate-500 italic mt-1">Este número receberá todas as comandas enviadas pelos clientes.</p>
+    <div className="space-y-12 pb-24 text-gray-900 w-full max-w-5xl mx-auto flex flex-col items-center font-normal">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-6 w-full px-6">
+        <h2 className="text-4xl font-impact text-[#D32F2F] italic uppercase">GERÊNCIA <span className="text-[#C5A021]">SUPREMA</span></h2>
+        <button onClick={onLogout} className="bg-gray-100 hover:bg-gray-200 text-gray-900 px-8 py-3 rounded-xl text-xs font-normal transition-all border border-gray-300">Encerrar Sessão</button>
+      </div>
+
+      <div className="w-full px-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* COMPARTILHAMENTO RÁPIDO */}
+        <div className="bg-white p-8 rounded-[2.5rem] border-4 border-[#10B981] shadow-xl text-center flex flex-col justify-center items-center">
+          <span className="text-4xl mb-4">🔗</span>
+          <h3 className="text-xl font-impact text-gray-900 mb-2 uppercase">Link de Compartilhamento</h3>
+          <p className="text-[10px] font-normal text-gray-400 mb-6 px-4">
+            Gere um link especial que abre o cardápio exatamente como ele está agora em qualquer navegador.
+          </p>
+          <button 
+            onClick={generateShareLink}
+            className="bg-[#10B981] text-white px-10 py-5 rounded-2xl text-xs w-full font-normal border-2 border-transparent hover:bg-[#059669] transition-all shadow-[6px_6px_0px_#111827]"
+          >
+            GERAR E COPIAR LINK ✨
+          </button>
+        </div>
+
+        {/* PERSISTÊNCIA NO CÓDIGO */}
+        <div className="bg-white p-8 rounded-[2.5rem] border-4 border-[#C5A021] shadow-xl text-center">
+          <span className="text-4xl mb-4">💾</span>
+          <h3 className="text-xl font-impact text-gray-900 mb-2 uppercase">Salvar no Código (Permanente)</h3>
+          <p className="text-[10px] font-normal text-gray-400 mb-6 px-4">
+            Para que o link principal do site salve suas mudanças para sempre, você precisa me enviar o código abaixo.
+          </p>
+          <button 
+            onClick={() => setShowPublishCode(!showPublishCode)}
+            className="bg-[#111827] text-white px-10 py-5 rounded-2xl text-xs w-full font-normal border-2 border-transparent hover:border-[#C5A021] transition-all"
+          >
+            {showPublishCode ? 'OCULTAR CÓDIGO' : 'VER CÓDIGO DE PUBLICAÇÃO'}
+          </button>
         </div>
       </div>
 
-      {/* Seção de Gestão do Cardápio */}
-      <div className="bg-slate-900/40 rounded-3xl p-6 border border-amber-500/20 backdrop-blur-sm shadow-2xl">
-        <div className="flex justify-between items-center mb-10 border-b border-amber-500/20 pb-4">
-          <h2 className="text-3xl font-brand text-amber-500 tracking-widest uppercase">Gestão do Acervo Real</h2>
-          <div className="text-xs text-slate-400 font-bold uppercase tracking-tighter">
-            Total: {snacks.length} itens
+      {showPublishCode && (
+        <div className="w-full px-6 animate-fade-in">
+          <div className="bg-white border-4 border-[#111827] rounded-[2rem] p-8">
+            <label className="text-[10px] font-normal uppercase text-[#C5A021] mb-2 block font-impact">COPIE O TEXTO ABAIXO E ME ENVIE NO CHAT:</label>
+            <textarea 
+              readOnly 
+              className="w-full h-48 bg-gray-50 border-2 border-gray-100 rounded-2xl p-6 text-[10px] font-mono overflow-auto font-normal"
+              value={JSON.stringify({ snacks, phoneNumber }, null, 2)}
+              onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+            />
+            <p className="text-[9px] mt-4 text-[#D32F2F] font-normal uppercase italic">Ao me enviar este código, eu atualizarei a base de dados do sistema para que fique salva para todos os usuários!</p>
           </div>
         </div>
-        
-        <div className="space-y-12">
-          {CATEGORIES.map((category) => {
-            const categorySnacks = snacks.filter(s => s.category === category.id);
-            
-            return (
-              <section key={category.id}>
-                <div className="flex items-center justify-between mb-6 group">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{category.icon}</span>
-                    <h3 className="text-xl font-brand text-white tracking-widest uppercase group-hover:text-amber-500 transition-colors">
-                      {category.label}
-                    </h3>
-                  </div>
-                  <button 
-                    onClick={() => handleAddNew(category.id as Snack['category'])}
-                    className="text-[10px] font-bold uppercase tracking-widest text-amber-500 border border-amber-500/30 px-3 py-1 rounded-full hover:bg-amber-500 hover:text-slate-900 transition-all"
-                  >
-                    + Adicionar {category.label}
-                  </button>
-                </div>
+      )}
 
-                <div className="grid gap-4">
-                  {categorySnacks.length === 0 ? (
-                    <div className="py-6 px-4 border border-dashed border-slate-800 rounded-2xl text-center text-slate-600 italic text-sm">
-                      Nenhum item em {category.label}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full px-6">
+        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm text-center">
+          <h3 className="text-xs font-normal mb-6 uppercase tracking-widest text-gray-300">Backup em Arquivo</h3>
+          <div className="flex gap-4">
+            <button onClick={handleExport} className="bg-[#111827] text-white px-6 py-4 rounded-2xl text-[10px] flex-1 font-normal">Exportar JSON</button>
+            <button onClick={() => importInputRef.current?.click()} className="bg-[#111827] text-white px-6 py-4 rounded-2xl text-[10px] flex-1 font-normal">Importar JSON</button>
+            <input type="file" ref={importInputRef} onChange={handleImport} className="hidden" accept=".json" />
+          </div>
+        </div>
+
+        <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm">
+          <h3 className="text-xs font-normal mb-6 uppercase tracking-widest text-gray-300">WhatsApp de Vendas</h3>
+          <input 
+            type="text" 
+            value={phoneNumber}
+            onChange={(e) => onUpdatePhone(e.target.value)}
+            className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl px-6 py-4 text-sm focus:border-[#D32F2F]/30 transition-all outline-none font-normal text-center"
+            placeholder="Ex: 5511999999999"
+          />
+        </div>
+      </div>
+
+      {/* LISTA DE EDIÇÃO */}
+      <div className="w-full px-6 space-y-16">
+        {CATEGORIES.map(cat => (
+          <div key={cat.id} className="w-full">
+            <div className="flex justify-between items-center mb-8 border-b-2 border-gray-100 pb-4">
+              <h4 className="text-2xl font-impact text-[#D32F2F]">{cat.icon} {cat.label}</h4>
+              <button 
+                onClick={() => onAddSnack({
+                  id: `snack-${Date.now()}`,
+                  name: 'NOVO LANCHE',
+                  description: 'Ingredientes premium...',
+                  price: 0,
+                  category: cat.id as Snack['category'],
+                  image: 'https://images.unsplash.com/photo-1550547660-d9450f859349?auto=format&fit=crop&q=80&w=400'
+                })}
+                className="bg-[#111827] text-white px-6 py-3 rounded-xl text-[10px] font-normal"
+              >
+                + ITEM
+              </button>
+            </div>
+
+            <div className="grid gap-4 w-full">
+              {snacks.filter(s => s.category === cat.id).map(snack => (
+                <div key={snack.id} className="bg-white border border-gray-100 rounded-[2rem] p-6 shadow-sm">
+                  {editingSnackId === snack.id ? (
+                    <div className="space-y-6">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        <div className="relative group w-full md:w-48 h-48 rounded-2xl overflow-hidden shadow-md">
+                          <img src={formData?.image} className="w-full h-full object-cover" />
+                          <button onClick={() => fileInputRef.current?.click()} className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] font-normal">TROCAR FOTO</button>
+                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                        </div>
+                        <div className="flex-1 space-y-4">
+                          <input value={formData?.name} onChange={e => setFormData({...formData!, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm font-normal" />
+                          <input type="number" value={formData?.price} onChange={e => setFormData({...formData!, price: parseFloat(e.target.value)})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm font-normal" />
+                          <textarea value={formData?.description} onChange={e => setFormData({...formData!, description: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm h-20 font-normal" />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-4">
+                        <button onClick={() => setEditingSnackId(null)} className="text-[10px] font-normal opacity-30">FECHAR</button>
+                        <button onClick={handleSave} className="bg-[#111827] text-white px-10 py-4 rounded-xl text-xs font-normal">SALVAR</button>
+                      </div>
                     </div>
                   ) : (
-                    categorySnacks.map((snack) => (
-                      <div key={snack.id} className="bg-slate-950/50 border border-amber-500/10 p-5 rounded-2xl flex flex-col gap-4 shadow-inner">
-                        {editingId === snack.id ? (
-                          <div className="w-full flex flex-col md:flex-row gap-6">
-                            <div className="flex flex-col items-center gap-4">
-                              <div className="relative group cursor-pointer" onClick={triggerFileInput}>
-                                <img 
-                                  src={editForm?.image} 
-                                  className="w-32 h-32 rounded-2xl object-cover border-2 border-amber-500 shadow-xl brightness-75 group-hover:brightness-100 transition-all" 
-                                  alt="Preview" 
-                                />
-                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                  <span className="text-white text-[10px] font-bold uppercase bg-black/50 px-2 py-1 rounded">Trocar Foto</span>
-                                </div>
-                              </div>
-                              <input 
-                                type="file" 
-                                ref={fileInputRef}
-                                onChange={handleFileChange}
-                                accept="image/*"
-                                className="hidden"
-                              />
-                            </div>
-
-                            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="flex flex-col gap-1">
-                                <label className="text-[10px] text-amber-500 uppercase font-bold tracking-widest">Título do Prato</label>
-                                <input name="name" value={editForm?.name} onChange={handleChange} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white outline-none" />
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <label className="text-[10px] text-amber-500 uppercase font-bold tracking-widest">Preço (R$)</label>
-                                <input name="price" type="number" step="0.01" value={editForm?.price} onChange={handleChange} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white outline-none" />
-                              </div>
-                              <div className="md:col-span-2 flex flex-col gap-1">
-                                <label className="text-[10px] text-amber-500 uppercase font-bold tracking-widest">Descrição</label>
-                                <textarea name="description" value={editForm?.description} onChange={handleChange} className="bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 text-white h-20 resize-none outline-none" />
-                              </div>
-                              <div className="md:col-span-2 flex gap-2 justify-end mt-2">
-                                <button onClick={() => setEditingId(null)} className="px-6 py-2 rounded-xl bg-slate-800 text-slate-300 font-bold text-xs uppercase">Cancelar</button>
-                                <button onClick={handleSave} className="px-6 py-2 rounded-xl gradient-brand text-white font-bold shadow-lg text-xs uppercase">Salvar</button>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col md:flex-row items-center gap-4">
-                            <img src={snack.image} className="w-16 h-16 rounded-xl object-cover border border-amber-500/20 shadow-lg" alt="" />
-                            <div className="flex-1 text-center md:text-left">
-                              <h4 className="text-lg font-bold text-white uppercase tracking-tight">{snack.name}</h4>
-                              <p className="text-amber-500 font-brand text-xl">R$ {snack.price.toFixed(2)}</p>
-                            </div>
-                            <div className="flex gap-2 w-full md:w-auto">
-                              <button onClick={() => handleEditClick(snack)} className="flex-1 md:flex-none bg-slate-900 hover:bg-slate-800 px-4 py-2 rounded-xl border border-slate-800 text-xs uppercase tracking-widest">Editar</button>
-                              <button onClick={() => handleDelete(snack.id, snack.name)} className="bg-red-950/20 hover:bg-red-600 text-red-500 hover:text-white px-4 py-2 rounded-xl transition-all font-bold border border-red-900/30">🗑️</button>
-                            </div>
-                          </div>
-                        )}
+                    <div className="flex items-center gap-6">
+                      <img src={snack.image} className="w-16 h-16 object-cover rounded-xl shadow-sm" />
+                      <div className="flex-1">
+                        <p className="font-normal text-lg text-gray-900">{snack.name}</p>
+                        <p className="text-[#D32F2F] font-normal text-sm">R$ {snack.price.toFixed(2)}</p>
                       </div>
-                    ))
+                      <div className="flex gap-2">
+                        <button onClick={() => { setEditingSnackId(snack.id); setFormData({...snack}); }} className="p-4 bg-gray-50 rounded-xl text-[#C5A021] hover:bg-[#C5A021] hover:text-white transition-all">✏️</button>
+                        <button onClick={() => onDeleteSnack(snack.id)} className="p-4 bg-red-50 rounded-xl text-[#D32F2F] hover:bg-[#D32F2F] hover:text-white transition-all">🗑️</button>
+                      </div>
+                    </div>
                   )}
                 </div>
-                <div className="h-px bg-gradient-to-r from-transparent via-amber-500/20 to-transparent mt-10"></div>
-              </section>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

@@ -13,30 +13,67 @@ type ViewMode = 'menu' | 'ai' | 'admin';
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('menu');
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [sharedLoaded, setSharedLoaded] = useState(false);
   
-  // Persistência do Cardápio
+  const STORAGE_KEY = 'supremo_burger_v2_data';
+  const PHONE_KEY = 'supremo_burger_v2_phone';
+  
+  // Lógica para carregar dados: 
+  // 1. Tenta pegar da URL (compartilhamento)
+  // 2. Tenta pegar do LocalStorage (edição local)
+  // 3. Usa o padrão do código (constants.tsx)
   const [snacks, setSnacks] = useState<Snack[]>(() => {
-    const saved = localStorage.getItem('guilherme_burgers_v1');
-    return saved ? JSON.parse(saved) : INITIAL_SNACKS;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const sharedData = params.get('d');
+      if (sharedData) {
+        const decoded = JSON.parse(decodeURIComponent(atob(sharedData)));
+        if (Array.isArray(decoded.snacks)) return decoded.snacks;
+      }
+      
+      const saved = localStorage.getItem(STORAGE_KEY);
+      return saved ? JSON.parse(saved) : INITIAL_SNACKS;
+    } catch (e) {
+      return INITIAL_SNACKS;
+    }
   });
 
-  // Persistência do Número do WhatsApp
   const [phoneNumber, setPhoneNumber] = useState(() => {
-    return localStorage.getItem('guilherme_burgers_phone') || '5511999999999';
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const sharedData = params.get('d');
+      if (sharedData) {
+        const decoded = JSON.parse(decodeURIComponent(atob(sharedData)));
+        if (decoded.phoneNumber) return decoded.phoneNumber;
+      }
+      return localStorage.getItem(PHONE_KEY) || '5511999999999';
+    } catch (e) {
+      return '5511999999999';
+    }
   });
 
-  const [activeCategory, setActiveCategory] = useState('Combos');
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-
-  // Auto-save effects
   useEffect(() => {
-    localStorage.setItem('guilherme_burgers_v1', JSON.stringify(snacks));
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('d')) {
+      setSharedLoaded(true);
+      setTimeout(() => setSharedLoaded(false), 5000);
+      // Limpa a URL para não ficar gigante, mas mantém os dados no estado
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snacks));
   }, [snacks]);
 
   useEffect(() => {
-    localStorage.setItem('guilherme_burgers_phone', phoneNumber);
+    localStorage.setItem(PHONE_KEY, phoneNumber);
   }, [phoneNumber]);
+
+  // Fix: Move state declarations before useMemo to ensure variables are defined before use
+  const [activeCategory, setActiveCategory] = useState('Combos');
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const filteredSnacks = useMemo(() => 
     snacks.filter(s => s.category === activeCategory),
@@ -72,147 +109,138 @@ const App: React.FC = () => {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
-  const handleUpdateSnack = (updatedSnack: Snack) => {
-    setSnacks(prev => prev.map(s => s.id === updatedSnack.id ? updatedSnack : s));
-  };
-
-  const handleAddSnack = (newSnack: Snack) => {
-    setSnacks(prev => [...prev, newSnack]);
-  };
-
-  const handleDeleteSnack = (id: string) => {
-    setSnacks(prev => prev.filter(s => s.id !== id));
-  };
-
-  const handleLogout = () => {
-    setIsAdminLoggedIn(false);
-    setViewMode('menu');
-  };
-
-  const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
+  const totalItemsCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <div className="min-h-screen pb-20 overflow-x-hidden">
-      <header className="py-8 px-4 text-center">
-        <div className="inline-block relative">
-          <div className="absolute -inset-4 bg-purple-600 blur-2xl opacity-10 animate-pulse"></div>
-          <h1 className="text-5xl md:text-7xl font-brand tracking-tighter text-white uppercase leading-none relative">
-            GUILHERME <span className="text-amber-500">BURGERS</span>
-          </h1>
-          <p className="text-amber-500 font-bold tracking-[0.3em] uppercase text-[10px] md:text-xs mt-3">
-            Premium Taste <span className="text-red-600">&</span> Royal Service
-          </p>
+    <div className="w-full flex flex-col items-center min-h-screen bg-[#F9F7F2]">
+      
+      {sharedLoaded && (
+        <div className="fixed top-24 z-[60] bg-[#10B981] text-white px-6 py-3 rounded-full shadow-2xl animate-bounce text-xs font-normal border-2 border-white">
+          ✨ Cardápio sincronizado via link com sucesso!
         </div>
-      </header>
+      )}
 
-      <div className="sticky top-4 z-40 max-w-fit mx-auto mb-10">
-        <nav className="flex bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-full border border-amber-500/30 shadow-2xl">
-          <button 
-            onClick={() => setViewMode('menu')}
-            className={`px-6 py-2 rounded-full font-bold text-xs uppercase tracking-widest transition-all ${
-              viewMode === 'menu' ? 'gradient-brand text-white shadow-lg' : 'text-slate-400 hover:text-amber-500'
-            }`}
-          >
-            Cardápio
-          </button>
-          <button 
-            onClick={() => setViewMode('ai')}
-            className={`px-6 py-2 rounded-full font-bold text-xs uppercase tracking-widest transition-all ${
-              viewMode === 'ai' ? 'gradient-brand text-white shadow-lg' : 'text-slate-400 hover:text-amber-500'
-            }`}
-          >
-            Chef IA
-          </button>
-          <button 
-            onClick={() => setViewMode('admin')}
-            className={`px-6 py-2 rounded-full font-bold text-xs uppercase tracking-widest transition-all ${
-              viewMode === 'admin' ? 'gradient-brand text-white shadow-lg' : 'text-slate-400 hover:text-amber-500'
-            }`}
-          >
-            Admin
-          </button>
+      {/* BARRA DE NAVEGAÇÃO FIXA NO TOPO */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b-2 border-[#111827]/10 flex justify-center py-4 px-4 fixed-nav-shadow">
+        <nav className="flex w-full max-w-2xl gap-2">
+          {[
+            { id: 'menu', label: 'CARDÁPIO', icon: '📋' },
+            { id: 'ai', label: 'CHEF AI', icon: '🤖' },
+            { id: 'admin', label: 'SISTEMA', icon: '⚙️' }
+          ].map((mode) => (
+            <button 
+              key={mode.id}
+              onClick={() => setViewMode(mode.id as ViewMode)}
+              className={`flex-1 px-4 py-4 rounded-2xl font-normal text-[11px] transition-all duration-300 flex items-center justify-center gap-3 border-2 border-transparent ${
+                viewMode === mode.id 
+                ? 'active-tab shadow-[5px_5px_0px_#C5A021] bg-[#111827] text-white' 
+                : 'text-gray-400 hover:text-[#D32F2F] hover:bg-[#D32F2F]/5'
+              }`}
+            >
+              <span className="text-lg">{mode.icon}</span>
+              {mode.label}
+            </button>
+          ))}
         </nav>
       </div>
 
-      <main className="max-w-4xl mx-auto px-4">
-        {viewMode === 'menu' && (
-          <div className="menu-page p-6 md:p-12 rounded-lg animate-slide-up relative">
-            <header className="text-center mb-10">
-              <h2 className="text-4xl font-brand text-amber-500 tracking-widest mb-2 uppercase">Menu Real</h2>
-              <div className="w-24 h-1 gradient-brand mx-auto"></div>
-            </header>
+      <div className="pt-24 w-full flex flex-col items-center">
+        {/* HEADER LOGO */}
+        <header className="pt-12 pb-16 px-4 w-full flex flex-col items-center animate-logo-entry">
+          <div className="relative group">
+            <div className="absolute inset-0 bg-[#C5A021]/10 rounded-full blur-3xl scale-150 group-hover:bg-[#D32F2F]/10 transition-all duration-700"></div>
+            
+            <div className="relative flex flex-col items-center animate-floating">
+              <div className="mb-6 transform transition-transform duration-500 group-hover:scale-125 group-hover:rotate-12">
+                <span className="text-7xl md:text-8xl filter drop-shadow-[0_10px_10px_rgba(211,47,47,0.15)]">🍔</span>
+              </div>
 
-            <div className="flex justify-center gap-4 flex-wrap mb-12">
-              {CATEGORIES.map(cat => (
-                <button
-                  key={cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                  className={`px-4 py-2 border-b-2 transition-all font-bold uppercase text-xs tracking-widest ${
-                    activeCategory === cat.id 
-                    ? 'border-amber-500 text-amber-500' 
-                    : 'border-transparent text-slate-400 hover:text-white'
-                  }`}
-                >
-                  {cat.icon} {cat.label}
-                </button>
-              ))}
+              <h1 className="text-center select-none">
+                <span className="block text-7xl md:text-[9rem] font-impact leading-[0.8] text-[#D32F2F] tracking-tighter transform group-hover:-translate-y-2 transition-transform duration-300">
+                  SUPREMO
+                </span>
+                <span className="block text-5xl md:text-[5.5rem] font-impact leading-[0.8] shine-gold-text tracking-[0.15em] -mt-1 md:-mt-2 transform group-hover:translate-y-2 transition-transform duration-300">
+                  BURGER
+                </span>
+              </h1>
             </div>
+          </div>
 
-            <div className="space-y-4">
-              {filteredSnacks.map(snack => (
-                <SnackCard key={snack.id} snack={snack} onAddToCart={addToCart} />
-              ))}
+          <div className="mt-10 bg-[#D32F2F] border-2 border-[#C5A021] px-10 py-2 rounded-full transform -rotate-2 hover:rotate-0 transition-all cursor-default shadow-[4px_4px_0px_#C5A021]">
+            <p className="text-white font-normal text-xs uppercase tracking-[0.5em]">O Rei do Sabor</p>
+          </div>
+        </header>
+
+        <main className="w-full max-w-6xl px-6 pb-48 flex flex-col items-center">
+          {viewMode === 'menu' && (
+            <div className="w-full flex flex-col items-center space-y-12">
+              {/* Categorias */}
+              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 w-full justify-start md:justify-center">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setActiveCategory(cat.id)}
+                    className={`px-8 py-4 rounded-2xl text-[11px] font-normal transition-all whitespace-nowrap border-2 ${
+                      activeCategory === cat.id 
+                      ? 'border-[#111827] bg-[#111827] text-white shadow-[4px_4px_0px_#C5A021]' 
+                      : 'border-[#111827]/5 text-gray-400 hover:border-[#D32F2F]/30 hover:bg-white bg-white/50'
+                    }`}
+                  >
+                    <span className="mr-2 text-base">{cat.icon}</span>
+                    {cat.label.toUpperCase()}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10 w-full">
+                {filteredSnacks.map(snack => (
+                  <SnackCard key={snack.id} snack={snack} onAddToCart={addToCart} />
+                ))}
+              </div>
             </div>
-            <div className="menu-divider"></div>
-            <footer className="text-center opacity-50 text-xs italic text-slate-300">
-              * Guilherme Burgers: Qualidade superior em cada mordida.
-            </footer>
-          </div>
-        )}
+          )}
 
-        {viewMode === 'ai' && (
-          <div className="max-w-2xl mx-auto py-10">
-             <AIChefAssistant snacks={snacks} />
-          </div>
-        )}
+          {viewMode === 'ai' && (
+            <div className="w-full max-w-2xl mx-auto">
+              <AIChefAssistant snacks={snacks} />
+            </div>
+          )}
 
-        {viewMode === 'admin' && (
-          <div className="max-w-4xl mx-auto py-10">
-            {isAdminLoggedIn ? (
-              <div className="relative">
-                <button 
-                  onClick={handleLogout}
-                  className="absolute -top-12 right-0 text-amber-500 text-xs font-bold uppercase hover:underline"
-                >
-                  Sair do Painel
-                </button>
+          {viewMode === 'admin' && (
+            <div className="w-full flex justify-center">
+              {isAdminLoggedIn ? (
                 <AdminPanel 
                   snacks={snacks} 
                   phoneNumber={phoneNumber}
                   onUpdatePhone={setPhoneNumber}
-                  onUpdateSnack={handleUpdateSnack} 
-                  onAddSnack={handleAddSnack}
-                  onDeleteSnack={handleDeleteSnack}
+                  onUpdateSnack={(s) => setSnacks(prev => prev.map(old => old.id === s.id ? s : old))}
+                  onAddSnack={(s) => setSnacks(prev => [...prev, s])}
+                  onDeleteSnack={(id) => setSnacks(prev => prev.filter(s => s.id !== id))}
+                  onImportAll={(newSnacks) => setSnacks(newSnacks)}
+                  onLogout={() => setIsAdminLoggedIn(false)}
                 />
-              </div>
-            ) : (
-              <AdminLogin onLoginSuccess={() => setIsAdminLoggedIn(true)} />
-            )}
-          </div>
-        )}
-      </main>
+              ) : (
+                <AdminLogin onLoginSuccess={() => setIsAdminLoggedIn(true)} />
+              )}
+            </div>
+          )}
+        </main>
+      </div>
 
-      <button 
-        onClick={() => setIsCartOpen(true)}
-        className="fixed bottom-6 right-6 z-50 gradient-brand p-4 rounded-full shadow-2xl hover:scale-110 active:scale-95 transition-all group border-2 border-white/20"
-      >
-        <span className="text-2xl">🛒</span>
-        {totalCartCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-white text-red-600 text-xs font-black w-6 h-6 flex items-center justify-center rounded-full shadow-lg">
-            {totalCartCount}
-          </span>
-        )}
-      </button>
+      {/* Botão Flutuante do Carrinho */}
+      <div className="fixed bottom-10 right-10 z-50">
+        <button 
+          onClick={() => setIsCartOpen(true)}
+          className="bg-[#D32F2F] text-white w-20 h-20 rounded-2xl border-4 border-[#111827] shadow-[6px_6px_0px_#111827] hover:scale-105 active:scale-95 transition-all flex items-center justify-center relative group"
+        >
+          <span className="text-3xl group-hover:rotate-12 transition-transform">🛒</span>
+          {totalItemsCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-[#C5A021] text-black text-xs font-normal h-10 w-10 rounded-full flex items-center justify-center border-4 border-[#111827] shadow-lg animate-bounce">
+              {totalItemsCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       <Cart 
         isOpen={isCartOpen} 

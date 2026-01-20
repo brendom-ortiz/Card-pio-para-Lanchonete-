@@ -6,65 +6,49 @@ interface AdminLoginProps {
 }
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [user, setUser] = useState('');
+  const [pass, setPass] = useState('');
+  const [error, setError] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Credenciais: Usuário 'Admin' e Senha '08092003'
-    if (username === 'Admin' && password === '08092003') {
+    if (user === 'Admin' && pass === '08092003') {
       onLoginSuccess();
     } else {
-      setError('Acesso negado. Verifique as credenciais.');
+      setError(true);
+      setTimeout(() => setError(false), 2000);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto bg-slate-900/60 p-8 rounded-3xl border border-amber-500/30 shadow-2xl animate-slide-up backdrop-blur-md">
-      <div className="text-center mb-8">
-        <div className="gradient-brand w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-2xl shadow-lg border border-white/20">
-          🔑
-        </div>
-        <h2 className="text-3xl font-brand text-amber-500 tracking-widest uppercase">Cofre de Dados</h2>
-        <p className="text-slate-400 text-sm mt-2">Acesso restrito para mestres churrasqueiros.</p>
+    <div className="max-w-md mx-auto p-12 brutal-border bg-white w-full border-t-8 border-[#C5A021]">
+      <div className="text-center mb-12">
+        <span className="text-5xl block mb-6">👑</span>
+        <h2 className="text-3xl font-impact text-[#D32F2F] uppercase tracking-tight">ACESSO <span className="text-[#C5A021]">SUPREMO</span></h2>
+        <p className="text-[10px] text-gray-400 font-normal uppercase tracking-widest mt-2">Área de Gerenciamento</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label className="block text-xs font-bold text-amber-500 uppercase mb-2 ml-1">Usuário</label>
-          <input 
-            type="text" 
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:ring-2 ring-amber-500 outline-none transition-all placeholder:text-slate-800"
-            placeholder="Nome de usuário"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-bold text-amber-500 uppercase mb-2 ml-1">Senha</label>
-          <input 
-            type="password" 
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 px-4 text-white focus:ring-2 ring-amber-500 outline-none transition-all placeholder:text-slate-800"
-            placeholder="••••••••"
-          />
-        </div>
+        <input 
+          type="text"
+          value={user}
+          onChange={e => setUser(e.target.value)}
+          className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 outline-none focus:border-[#C5A021]/30 transition-all font-normal"
+          placeholder="Usuário"
+        />
+        <input 
+          type="password"
+          value={pass}
+          onChange={e => setPass(e.target.value)}
+          className="w-full bg-gray-50 border-2 border-gray-100 rounded-2xl p-5 text-gray-900 outline-none focus:border-[#C5A021]/30 transition-all font-normal"
+          placeholder="Senha"
+        />
 
         {error && (
-          <p className="text-red-500 text-center text-sm font-semibold bg-red-950/20 py-2 rounded-lg border border-red-900/30">
-            {error}
-          </p>
+          <p className="text-xs text-[#D32F2F] text-center font-normal animate-bounce">Credenciais Inválidas!</p>
         )}
 
-        <button 
-          type="submit"
-          className="w-full gradient-brand hover:brightness-110 text-white font-bold py-4 rounded-xl transition-all shadow-lg active:scale-95 shadow-red-900/20"
-        >
-          Desbloquear Sistema
-        </button>
+        <button type="submit" className="bg-[#111827] text-white w-full py-5 rounded-2xl text-xs font-normal border-2 border-[#111827] hover:bg-[#D32F2F] hover:border-[#D32F2F] transition-all shadow-[6px_6px_0px_#C5A021]">ENTRAR NO SISTEMA</button>
       </form>
     </div>
   );

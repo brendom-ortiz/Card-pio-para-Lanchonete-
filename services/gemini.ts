@@ -10,22 +10,28 @@ export const getChefRecommendation = async (userPrompt: string, snacks: Snack[])
     
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
-      contents: `Você é o Chef Virtual do "Guilherme Burgers". 
-      O cardápio atual é:
+      contents: `Você é o "CHEF SUPREMO" do restaurante SUPREMO BURGER. 
+      Sua personalidade é vibrante, premium, autoritária mas amigável, e foca na riqueza dos sabores e na tradição dos melhores burgers.
+      O tema do restaurante é Vermelho Intenso, Dourado Nobre e Preto Elegante.
+      
+      Cardápio disponível:
       ${menuString}
       
-      O cliente disse: "${userPrompt}"
+      Input do Cliente: "${userPrompt}"
       
-      Recomende o melhor lanche ou combinação baseada no gosto dele. Seja entusiasmado, use emojis e foque nas cores Vermelho, Roxo e Dourado (nossa identidade clássica e poderosa) em sua fala. Mantenha a resposta curta e atrativa. Mencione que Guilherme preparou tudo com maestria real.`,
+      Instruções de Resposta:
+      - Seja entusiasmado e use termos como "EXPERIÊNCIA REAL", "SABOR SUPREMO", "QUALIDADE NOBRE".
+      - Use emojis de fogo, coroa, hambúrguer e brilho (🔥👑🍔✨🥓🍖).
+      - Recomende sempre com base na satisfação máxima e no prazer de comer bem.
+      - Responda de forma curta e memorável (máximo 3 frases).`,
       config: {
         temperature: 0.8,
-        topP: 0.95,
       }
     });
 
-    return response.text || "Desculpe, o Chef Guilherme está focado na grelha! Que tal nosso burger de ouro?";
+    return response.text || "Uma escolha digna de um rei! O Supremo Burger está pronto para conquistar seu paladar! 🔥👑🍔";
   } catch (error) {
     console.error("Gemini Error:", error);
-    return "Tive um problema na cozinha real! Mas Guilherme recomenda as nossas opções em Vermelho e Dourado.";
+    return "Sinto o fogo da grelha! Recomendo o nosso Delícia Bacon hoje para uma explosão de sabor supremo! 🔥🍔";
   }
 };
